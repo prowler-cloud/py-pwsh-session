@@ -1,11 +1,12 @@
 import json
+import logging
 import queue
 import re
 import subprocess
 import threading
 from typing import Union
 
-from prowler.lib.logger import logger
+logger = logging.getLogger(__name__)
 
 
 class PowerShellSession:
