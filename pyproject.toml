@@ -11,9 +11,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Apache Software License"
 ]
-dependencies = [
-  ""
-]
+dependencies = []
 description = "Python package to manage persistent PowerShell sessions, with support for command execution, JSON result parsing, and secure error handling."
 license = "Apache-2.0"
 maintainers = [
@@ -29,3 +27,15 @@ version = "0.1.0"
 "Documentation" = "https://docs.prowler.cloud"
 "Homepage" = "https://github.com/prowler-cloud/py-powershell"
 "Issue tracker" = "https://github.com/prowler-cloud/py-powershell/issues"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "pytest-xdist>=3.0.0",
+  "ruff>=0.0.280",
+  "pylint>=2.17.0",
+  "bandit>=1.7.0",
+  "safety>=2.3.0",
+  "vulture>=2.9.0",
+]
