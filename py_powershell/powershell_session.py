@@ -118,10 +118,10 @@ class PowerShellSession:
             >>> execute("Get-Process | ConvertTo-Json")
             {"Name": "process1", "Id": 1234}
         """
-        self.process.stdin.write(
-            f"{command}\n"
-        ) if not json_parse else self.process.stdin.write(
-            f"{command} | ConvertTo-Json\n"
+        (
+            self.process.stdin.write(f"{command}\n")
+            if not json_parse
+            else self.process.stdin.write(f"{command} | ConvertTo-Json\n")
         )
         self.process.stdin.write(f"Write-Output '{self.END}'\n")
         self.process.stdin.write(f"Write-Error '{self.END}'\n")
@@ -272,26 +272,3 @@ class PowerShellSession:
                 self.process.stdout.close()
                 self.process.stderr.close()
                 self.process = None
-
-    def __enter__(self):
-        """
-        Enter the context manager.
-
-        Returns:
-            PowerShellSession: The current instance for use in the with statement.
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exit the context manager and clean up resources.
-
-        Args:
-            exc_type: Exception type if an exception occurred.
-            exc_val: Exception value if an exception occurred.
-            exc_tb: Exception traceback if an exception occurred.
-
-        Returns:
-            None: Does not suppress exceptions.
-        """
-        self.close()

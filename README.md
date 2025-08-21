@@ -2,7 +2,7 @@
   <img src="imgs/py-powershell.png" alt="py-powershell logo" height="300" />
 
   <h1>py-powershell</h1>
-  
+
   <p><em>Python module to manage persistent PowerShell sessions, with support for command execution, JSON result parsing, and secure error handling.</em></p>
 </div>
 
@@ -104,7 +104,7 @@ from py_powershell import PowerShellSession
 with PowerShellSession() as pwsh:
     # Execute commands with different timeouts as needed
     services = pwsh.execute("Get-Service", json_parse=True, timeout=20)
-    
+
     # Work with the results
     for service in services:
         print(f"Service: {service['Name']} - Status: {service['Status']}")
@@ -124,7 +124,7 @@ logging.basicConfig(level=logging.INFO)
 with PowerShellSession() as pwsh:
     # Connect to Azure (interactive login)
     pwsh.execute("Connect-AzAccount")
-    
+
     # Get Azure VMs with JSON output
     # Any PowerShell errors will be automatically logged by the session
     vms = pwsh.execute(
@@ -132,7 +132,7 @@ with PowerShellSession() as pwsh:
         json_parse=True,
         timeout=30
     )
-    
+
     # Process results
     for vm in vms:
         print(f"VM: {vm['Name']} in {vm['ResourceGroupName']} ({vm['Location']})")
@@ -146,14 +146,14 @@ from py_powershell import PowerShellSession
 with PowerShellSession() as pwsh:
     # Connect to Exchange Online
     pwsh.execute("Connect-ExchangeOnline")
-    
+
     # Get mailbox statistics
     mailboxes = pwsh.execute(
         "Get-Mailbox -ResultSize 10 | Get-MailboxStatistics",
         json_parse=True,
         timeout=60
     )
-    
+
     # Display mailbox info
     for mailbox in mailboxes:
         size_mb = float(mailbox['TotalItemSize'].split('(')[1].split(' ')[0].replace(',', '')) / 1024 / 1024
@@ -172,13 +172,13 @@ def get_system_info():
             "Get-ComputerInfo | Select-Object WindowsProductName, TotalPhysicalMemory, CsProcessors",
             json_parse=True
         )
-        
+
         # Get disk usage
         disk_info = pwsh.execute(
             "Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace",
             json_parse=True
         )
-        
+
         return {
             'computer': computer_info,
             'disks': disk_info
@@ -208,10 +208,10 @@ with PowerShellSession() as pwsh:
     # PowerShell errors are automatically logged during execute()
     # The logger captures stderr output from PowerShell
     result = pwsh.execute("Get-NonExistentCommand", timeout=5)
-    
+
     # Any PowerShell errors will appear in logs like:
     # ERROR - py_powershell.powershell_session - PowerShell error output: Get-NonExistentCommand : The term 'Get-NonExistentCommand' is not recognized...
-    
+
     if not result:
         print("Command returned no output or failed")
 ```
@@ -226,17 +226,17 @@ from py_powershell import PowerShellSession
 with PowerShellSession() as pwsh:
     # Execute with custom timeout (default is 10 seconds)
     result = pwsh.execute("Get-Process", timeout=30)
-    
+
     # Long-running command with extended timeout
     large_data = pwsh.execute(
         "Get-EventLog -LogName System -Newest 1000",
         json_parse=True,
         timeout=60
     )
-    
+
     # Quick command with short timeout
     quick_result = pwsh.execute("Get-Date", timeout=5)
-    
+
     # Very long operation (e.g., Azure operations)
     azure_vms = pwsh.execute(
         "Get-AzVM -Status",
@@ -256,12 +256,12 @@ def connect_with_credentials():
         # Use environment variables for credentials
         username = pwsh.sanitize(os.environ.get('pwsh_USERNAME', ''))
         password = pwsh.sanitize(os.environ.get('pwsh_PASSWORD', ''))
-        
+
         if username and password:
             # Create secure credential
             pwsh.execute(f"$secpass = ConvertTo-SecureString '{password}' -AsPlainText -Force")
             pwsh.execute(f"$cred = New-Object System.Management.Automation.pwshCredential('{username}', $secpass)")
-            
+
             # Use credential for authentication
             result = pwsh.execute("Connect-SomeService -Credential $cred")
             return result

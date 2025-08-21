@@ -1,41 +1,48 @@
 [build-system]
 build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=2.0"]
+requires = ["poetry-core>=1.0.0"]
 
-# https://peps.python.org/pep-0621/
-[project]
-authors = [
-  {name = "Prowler Team", email = "engineering@prowler.com"}
-]
+[tool.poetry]
+authors = ["Prowler Team <engineering@prowler.com>"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: Apache Software License"
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Systems Administration",
+  "Topic :: Utilities"
 ]
-dependencies = []
 description = "Python package to manage persistent PowerShell sessions, with support for command execution, JSON result parsing, and secure error handling."
+documentation = "https://docs.prowler.cloud"
+homepage = "https://github.com/prowler-cloud/py-powershell"
+keywords = ["powershell", "automation", "windows", "cli", "subprocess"]
 license = "Apache-2.0"
-maintainers = [
-  {name = "Prowler Team", email = "engineering@prowler.com"}
-]
+maintainers = ["Prowler Team <engineering@prowler.com>"]
 name = "py-powershell"
+packages = [{include = "py_powershell"}]
 readme = "README.md"
-requires-python = ">3.9.1,<3.14"
+repository = "https://github.com/prowler-cloud/py-powershell"
 version = "0.1.0"
 
-[project.urls]
-"Changelog" = "https://github.com/prowler-cloud/py-powershell/releases"
-"Documentation" = "https://docs.prowler.cloud"
-"Homepage" = "https://github.com/prowler-cloud/py-powershell"
-"Issue tracker" = "https://github.com/prowler-cloud/py-powershell/issues"
+[tool.poetry.dependencies]
+python = "^3.9.1"
 
-[project.optional-dependencies]
-dev = [
-  "pytest>=7.4.0",
-  "pytest-cov>=4.1.0",
-  "pytest-xdist>=3.0.0",
-  "ruff>=0.0.280",
-  "pylint>=2.17.0",
-  "bandit>=1.7.0",
-  "safety>=2.3.0",
-  "vulture>=2.9.0",
-]
+[tool.poetry.group.dev.dependencies]
+autoflake = "^2.3.0"
+bandit = "^1.7.0"
+black = "^24.4.0"
+isort = "^5.13.0"
+pre-commit = "^3.0.0"
+pylint = "^2.17.0"
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-xdist = "^3.0.0"
+safety = "^3.0.0"
+vulture = "^2.9.0"
+
+[tool.poetry.urls]
+"Changelog" = "https://github.com/prowler-cloud/py-powershell/releases"
+"Issue tracker" = "https://github.com/prowler-cloud/py-powershell/issues"
