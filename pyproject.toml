@@ -1,9 +1,11 @@
 [build-system]
 build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0"]
 
-[tool.poetry]
-authors = ["Prowler Team <engineering@prowler.com>"]
+[project]
+authors = [
+  {name = "Prowler Team", email = "engineering@prowler.com"}
+]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Apache Software License",
@@ -15,20 +17,27 @@ classifiers = [
   "Topic :: System :: Systems Administration",
   "Topic :: Utilities"
 ]
+dependencies = []
 description = "Python package to manage persistent PowerShell sessions, with support for command execution, JSON result parsing, and secure error handling."
-documentation = "https://docs.prowler.cloud"
-homepage = "https://github.com/prowler-cloud/py-powershell"
 keywords = ["powershell", "automation", "windows", "cli", "subprocess"]
 license = "Apache-2.0"
-maintainers = ["Prowler Team <engineering@prowler.com>"]
+maintainers = [
+  {name = "Prowler Team", email = "engineering@prowler.com"}
+]
 name = "py-powershell"
-packages = [{include = "py_powershell"}]
 readme = "README.md"
-repository = "https://github.com/prowler-cloud/py-powershell"
+requires-python = ">=3.9.1,<3.14"
 version = "0.1.0"
 
-[tool.poetry.dependencies]
-python = "^3.9.1"
+[project.urls]
+"Changelog" = "https://github.com/prowler-cloud/py-powershell/releases"
+"Documentation" = "https://docs.prowler.cloud"
+"Homepage" = "https://github.com/prowler-cloud/py-powershell"
+"Issue tracker" = "https://github.com/prowler-cloud/py-powershell/issues"
+"Repository" = "https://github.com/prowler-cloud/py-powershell"
+
+[tool.poetry]
+packages = [{include = "py_powershell"}]
 
 [tool.poetry.group.dev.dependencies]
 autoflake = "^2.3.0"
@@ -42,7 +51,3 @@ pytest-cov = "^4.1.0"
 pytest-xdist = "^3.0.0"
 safety = "^3.0.0"
 vulture = "^2.9.0"
-
-[tool.poetry.urls]
-"Changelog" = "https://github.com/prowler-cloud/py-powershell/releases"
-"Issue tracker" = "https://github.com/prowler-cloud/py-powershell/issues"
