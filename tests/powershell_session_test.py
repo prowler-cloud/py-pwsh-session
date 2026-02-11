@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from powershell_session import PowerShellSession
+from py_powershell import PowerShellSession
 
 
 class TestPowerShellSession:
@@ -106,7 +106,7 @@ class TestPowerShellSession:
             f"Write-Error: {session.END}\n",
         ]
         with patch.object(session, "remove_ansi", side_effect=lambda x: x):
-            with patch("powershell_session.powershell_session.logger.error") as mock_error:
+            with patch("py_powershell.powershell_session.logger.error") as mock_error:
                 result = session.execute("Get-Command")
                 assert result == ""
                 mock_error.assert_called_once_with(
@@ -142,7 +142,7 @@ class TestPowerShellSession:
             f"Write-Error: {session.END}\n",
         ]
         with patch.object(session, "remove_ansi", side_effect=lambda x: x):
-            with patch("powershell_session.powershell_session.logger.error") as mock_error:
+            with patch("py_powershell.powershell_session.logger.error") as mock_error:
                 result = session.read_output()
                 assert result == ""
                 mock_error.assert_called_once_with(
@@ -194,7 +194,7 @@ class TestPowerShellSession:
         session = PowerShellSession()
 
         # Test warning for non-JSON output
-        with patch("powershell_session.powershell_session.logger.error") as mock_error:
+        with patch("py_powershell.powershell_session.logger.error") as mock_error:
             result = session.json_parse_output("some text without json")
             assert result == {}
             mock_error.assert_called_once_with(
