@@ -272,3 +272,27 @@ class PowerShellSession:
                 self.process.stdout.close()
                 self.process.stderr.close()
                 self.process = None
+
+    def __enter__(self):
+        """
+        Enter the context manager.
+
+        Returns:
+            PowerShellSession: The current instance for use in the with statement.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Exit the context manager and clean up resources.
+
+        Args:
+            exc_type: Exception type if an exception occurred.
+            exc_val: Exception value if an exception occurred.
+            exc_tb: Exception traceback if an exception occurred.
+
+        Returns:
+            None: Does not suppress exceptions.
+        """
+        _ = exc_type, exc_val, exc_tb
+        self.close()
