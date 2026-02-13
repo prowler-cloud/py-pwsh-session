@@ -260,7 +260,7 @@ def connect_with_credentials():
         if username and password:
             # Create secure credential
             pwsh.execute(f"$secpass = ConvertTo-SecureString '{password}' -AsPlainText -Force")
-            pwsh.execute(f"$cred = New-Object System.Management.Automation.pwshCredential('{username}', $secpass)")
+            pwsh.execute(f"$cred = New-Object System.Management.Automation.PSCredential('{username}', $secpass)")
 
             # Use credential for authentication
             result = pwsh.execute("Connect-SomeService -Credential $cred")
@@ -275,6 +275,6 @@ We welcome contributions! Please submit pull requests or open issues on GitHub.
 
 ## Support
 
-- **Documentation**: [Read the full documentation](httpwsh://py-powershell.readthedocs.io)
-- **Issues**: [Report bugs or request features](httpwsh://github.com/hugopbrito/py-powershell/issues)
-- **Discussions**: [Join the community discussions](httpwsh://github.com/hugopbrito/py-powershell/discussions)
+- **Documentation**: [Read the full documentation](https://py-powershell.readthedocs.io)
+- **Issues**: [Report bugs or request features](https://github.com/prowler-cloud/py-powershell/issues)
+- **Discussions**: [Join the community discussions](https://github.com/prowler-cloud/py-powershell/discussions)
