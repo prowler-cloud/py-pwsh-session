@@ -1,0 +1,73 @@
+repos:
+  ## GENERAL
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: no-commit-to-branch
+      - id: pretty-format-json
+        args: ["--autofix", "--no-sort-keys", "--no-ensure-ascii"]
+
+  ## TOML
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.13.0
+    hooks:
+      - id: pretty-format-toml
+        args: ["--autofix"]
+        files: pyproject.toml
+
+  ## PYTHON
+  - repo: https://github.com/myint/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args:
+          [
+            "--in-place",
+            "--remove-all-unused-imports",
+            "--remove-unused-variable",
+          ]
+
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: bash -c 'pylint --disable=W,C,R,E -j 0 -rn -sn py_powershell/'
+        language: system
+        files: '.*\.py'
+
+      - id: bandit
+        name: bandit
+        description: "Bandit is a tool for finding common security issues in Python code"
+        entry: bash -c 'bandit -q -lll -x "./tests/" -r .'
+        language: system
+        files: '.*\.py'
+
+      - id: safety
+        name: safety
+        description: "Safety is a tool that checks your installed dependencies for known security vulnerabilities"
+        entry: bash -c 'poetry export -f requirements.txt --dev | safety check --stdin'
+        language: system
+
+      - id: vulture
+        name: vulture
+        description: "Vulture finds unused code in Python programs."
+        entry: bash -c 'vulture --exclude "tests/" --min-confidence 100 .'
+        language: system
+        files: '.*\.py'
