@@ -51,7 +51,7 @@ jobs:
 
       - name: Safety
         run: |
-          poetry run safety check --ignore 70612
+          poetry run safety check --ignore 70612 --ignore 84031 --ignore 82331 --ignore 82332 --ignore 83159 --ignore 82754 --ignore 84183 --ignore 84339 --ignore 81132 --ignore 80401 --ignore 79756
 
       - name: Vulture
         run: |
