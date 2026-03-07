@@ -118,11 +118,7 @@ class PowerShellSession:
             >>> execute("Get-Process | ConvertTo-Json")
             {"Name": "process1", "Id": 1234}
         """
-        (
-            self.process.stdin.write(f"{command}\n")
-            if not json_parse
-            else self.process.stdin.write(f"{command} | ConvertTo-Json\n")
-        )
+        self.process.stdin.write(f"{command}\n")
         self.process.stdin.write(f"Write-Output '{self.END}'\n")
         self.process.stdin.write(f"Write-Error '{self.END}'\n")
         return (
