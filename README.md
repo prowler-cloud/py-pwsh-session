@@ -20,32 +20,101 @@
 - **JSON Support** - Native JSON parsing from PowerShell `ConvertTo-Json` output
 - **Rich Logging** - Automatic error logging from PowerShell stderr during command execution
 
-## Architecture
+## How It Works
 
-The `PowerShellSession` class provides the core functionality:
+### Connection Lifecycle
 
-- **Subprocess Management**: Manages a persistent PowerShell process with stdin/stdout/stderr pipes
-- **Thread Safety**: Uses threading for non-blocking I/O operations
-- **Security**: Input sanitization prevents command injection attacks
-- **Output Processing**: Automatic ANSI escape sequence removal and JSON parsing
-- **Error Handling**: Automatic logging of PowerShell stderr output during each command execution
+The following diagram shows how `py-powershell` manages the full lifecycle of a PowerShell session, from initialization to cleanup:
 
-### Class Hierarchy
-
+```mermaid
+flowchart TD
+    A[Python Application] -->|"PowerShellSession()"| B[Spawn pwsh subprocess]
+    B -->|"pwsh -NoExit -Command -"| C[Persistent Session Ready]
+    C -->|"execute(cmd)"| D[Write command to stdin]
+    D --> E[Append END markers to stdout/stderr]
+    E --> F[Read stdout in daemon thread]
+    E --> G[Read stderr in daemon thread]
+    F -->|"Collect lines until END"| H{json_parse?}
+    G -->|"Collect errors until END"| I[Log errors via logger]
+    H -->|Yes| J[Parse JSON from output]
+    H -->|No| K[Return raw string]
+    J --> L[Return dict/list]
+    K --> L
+    L -->|Next command| D
+    L -->|Done| M["close() / __exit__()"]
+    M --> N[Send exit + terminate process]
+    N --> O[Close stdin/stdout/stderr pipes]
 ```
-PowerShellSession
-├── __init__()          # Initialize persistent session
-├── execute()           # Execute commands with optional JSON parsing
-├── read_output()       # Read and process command output
-├── json_parse_output() # Parse JSON from PowerShell output
-├── sanitize()          # Sanitize input to prevent injection
-├── remove_ansi()       # Clean ANSI escape sequences
-└── close()             # Cleanup and terminate session
+
+### Command Execution Flow
+
+Each call to `execute()` follows this sequence internally:
+
+```mermaid
+sequenceDiagram
+    participant App as Python App
+    participant Session as PowerShellSession
+    participant PS as pwsh Process
+    participant T1 as stdout Thread
+    participant T2 as stderr Thread
+
+    App->>Session: execute("Get-Process", json_parse=True, timeout=10)
+    Session->>PS: stdin: "Get-Process | ConvertTo-Json\n"
+    Session->>PS: stdin: "Write-Output '<END>'\n"
+    Session->>PS: stdin: "Write-Error '<END>'\n"
+
+    Session->>T1: Start daemon thread (read stdout)
+    Session->>T2: Start daemon thread (read stderr)
+
+    PS-->>T1: stdout lines...
+    PS-->>T1: "<END>"
+    T1-->>Session: Joined output via Queue
+
+    PS-->>T2: stderr lines...
+    PS-->>T2: "Write-Error: <END>"
+    T2-->>Session: Joined errors via Queue
+
+    Session->>Session: Log errors (if any)
+    Session->>Session: json_parse_output(output)
+    Session-->>App: Return parsed dict/list
 ```
+
+### Persistent Sessions: Why They Matter
+
+Unlike running individual `subprocess.run(["pwsh", "-Command", "..."])` calls, `py-powershell` keeps a **single PowerShell process alive** across multiple commands.
+
+This is critical when working with **Microsoft PowerShell modules** (Azure, Exchange Online, Microsoft Graph, etc.) that require authentication. With individual subprocess calls, each command spawns a new `pwsh` process that dies immediately after execution — the authenticated session dies with it, making it impossible to run follow-up queries. With `py-powershell`, you authenticate once and the session stays alive, so all subsequent commands run in the same authenticated context.
+
+```mermaid
+flowchart LR
+    subgraph without["Without py-powershell"]
+        direction TB
+        A1["subprocess.run(Connect-AzAccount)"] --> A2["Start pwsh → Auth ✅ → Exit ❌"]
+        A3["subprocess.run(Get-AzVM)"] --> A4["Start pwsh → Not authenticated ❌"]
+        A5["subprocess.run(Get-AzVM)"] --> A6["Start pwsh → Not authenticated ❌"]
+    end
+
+    subgraph with["With py-powershell"]
+        direction TB
+        B1["PowerShellSession()"] --> B2["Start pwsh once"]
+        B2 --> B3["execute(Connect-AzAccount) ✅"]
+        B3 --> B4["execute(Get-AzVM) ✅ authenticated"]
+        B4 --> B5["execute(Get-AzStorageAccount) ✅ authenticated"]
+        B5 --> B6["close()"]
+    end
+```
+
+| Aspect | `subprocess.run()` per command | `py-powershell` session |
+|---|---|---|
+| Process startup | Every command | Once |
+| Authentication | Lost after each command | Persists across commands |
+| Variables/state | Lost between calls | Preserved |
+| Module queries | Fail (no auth context) | Work (same session) |
+| Performance | Slow (process spawn overhead) | Fast (reuse open process) |
 
 ## Requirements
 
-- **Python 3.9+** - Modern Python with full type hint support
+- **Python 3.10+**
 - **PowerShell Core (pwsh)** - Must be installed and available in PATH
 - **Operating System**: Windows, macOS, or Linux with PowerShell Core
 
@@ -83,116 +152,150 @@ from py_powershell import PowerShellSession
 # Create a persistent PowerShell session
 pwsh = PowerShellSession()
 
-# Execute a simple command
+# Execute a simple command (returns raw string)
 result = pwsh.execute("Get-Process | Select-Object -First 5")
 print(result)
 
 # Execute with JSON parsing and custom timeout
 data = pwsh.execute("Get-Service | Select-Object -First 3", json_parse=True, timeout=15)
-print(data)
+print(data)  # Returns a Python dict/list
 
 # Always close the session when done
 pwsh.close()
 ```
 
-### Context Manager
+### Context Manager (Recommended)
+
+The context manager ensures the session is always properly closed, even if an exception occurs:
 
 ```python
 from py_powershell import PowerShellSession
 
-# Use context manager for automatic cleanup
 with PowerShellSession() as pwsh:
-    # Execute commands with different timeouts as needed
     services = pwsh.execute("Get-Service", json_parse=True, timeout=20)
 
-    # Work with the results
     for service in services:
         print(f"Service: {service['Name']} - Status: {service['Status']}")
+# Session is automatically closed here
 ```
 
-## Comprehensive Examples
+## Usage Examples
 
-### Working with Azure PowerShell
+### Leveraging Session Persistence
+
+Variables, modules, and authentication persist across commands within the same session:
 
 ```python
 from py_powershell import PowerShellSession
-import logging
-
-# Configure logging to see PowerShell errors automatically captured
-logging.basicConfig(level=logging.INFO)
 
 with PowerShellSession() as pwsh:
-    # Connect to Azure (interactive login)
-    pwsh.execute("Connect-AzAccount")
+    # Set a variable in the session
+    pwsh.execute("$myList = @()")
 
-    # Get Azure VMs with JSON output
-    # Any PowerShell errors will be automatically logged by the session
+    # Accumulate data across multiple commands — state is preserved
+    pwsh.execute("$myList += 'item1'")
+    pwsh.execute("$myList += 'item2'")
+    pwsh.execute("$myList += 'item3'")
+
+    # Retrieve the accumulated result
+    result = pwsh.execute("$myList | ConvertTo-Json", json_parse=True)
+    print(result)  # ['item1', 'item2', 'item3']
+```
+
+### Cloud Authentication (Azure Example)
+
+Authenticate once, run multiple commands without re-authenticating:
+
+```python
+from py_powershell import PowerShellSession
+
+with PowerShellSession() as pwsh:
+    # Authenticate once — session stays logged in
+    pwsh.execute("Connect-AzAccount", timeout=30)
+
+    # All subsequent commands reuse the authenticated session
     vms = pwsh.execute(
         "Get-AzVM | Select-Object Name, ResourceGroupName, Location",
         json_parse=True,
-        timeout=30
+        timeout=30,
     )
-
-    # Process results
     for vm in vms:
-        print(f"VM: {vm['Name']} in {vm['ResourceGroupName']} ({vm['Location']})")
+        print(f"VM: {vm['Name']} in {vm['Location']}")
+
+    # No need to re-authenticate
+    storage = pwsh.execute(
+        "Get-AzStorageAccount | Select-Object StorageAccountName, Location",
+        json_parse=True,
+        timeout=30,
+    )
+    for account in storage:
+        print(f"Storage: {account['StorageAccountName']}")
 ```
 
-### Microsoft 365 Administration
+### Input Sanitization
+
+The `sanitize()` method prevents command injection by filtering unsafe characters:
+
+```python
+from py_powershell import PowerShellSession
+import os
+
+with PowerShellSession() as pwsh:
+    # Sanitize user-provided input before using it in commands
+    raw_input = os.environ.get("USER_EMAIL", "")
+    safe_input = pwsh.sanitize(raw_input)
+    # "user@domain.com; rm -rf /" → "user@domain.com"
+
+    result = pwsh.execute(f"Get-ADUser -Filter {{EmailAddress -eq '{safe_input}'}}", json_parse=True)
+```
+
+### JSON Parsing
+
+Use `json_parse=True` to automatically pipe output through `ConvertTo-Json` and parse it into Python objects:
 
 ```python
 from py_powershell import PowerShellSession
 
 with PowerShellSession() as pwsh:
-    # Connect to Exchange Online
-    pwsh.execute("Connect-ExchangeOnline")
-
-    # Get mailbox statistics
-    mailboxes = pwsh.execute(
-        "Get-Mailbox -ResultSize 10 | Get-MailboxStatistics",
+    # Returns a Python dict/list instead of a raw string
+    processes = pwsh.execute(
+        "Get-Process | Select-Object Name, Id, CPU -First 5",
         json_parse=True,
-        timeout=60
     )
 
-    # Display mailbox info
-    for mailbox in mailboxes:
-        size_mb = float(mailbox['TotalItemSize'].split('(')[1].split(' ')[0].replace(',', '')) / 1024 / 1024
-        print(f"Mailbox: {mailbox['DisplayName']} - Size: {size_mb:.2f} MB")
+    # Work with structured data directly
+    for proc in processes:
+        print(f"PID {proc['Id']}: {proc['Name']} (CPU: {proc.get('CPU', 'N/A')})")
+
+    # Without json_parse, you get the raw PowerShell text output
+    raw = pwsh.execute("Get-Date")
+    print(raw)  # "Saturday, March 7, 2026 12:00:00 PM"
 ```
 
-### System Administration
+### Timeout Handling
+
+Configure timeouts per command based on expected execution time:
 
 ```python
 from py_powershell import PowerShellSession
 
-def get_system_info():
-    with PowerShellSession() as pwsh:
-        # Get computer info
-        computer_info = pwsh.execute(
-            "Get-ComputerInfo | Select-Object WindowsProductName, TotalPhysicalMemory, CsProcessors",
-            json_parse=True
-        )
+with PowerShellSession() as pwsh:
+    # Quick command — short timeout (default is 10s)
+    date = pwsh.execute("Get-Date", timeout=5)
 
-        # Get disk usage
-        disk_info = pwsh.execute(
-            "Get-WmiObject -Class Win32_LogicalDisk | Select-Object DeviceID, Size, FreeSpace",
-            json_parse=True
-        )
+    # Medium operation
+    services = pwsh.execute("Get-Service", json_parse=True, timeout=20)
 
-        return {
-            'computer': computer_info,
-            'disks': disk_info
-        }
+    # Long-running operation (e.g., cloud API calls)
+    all_vms = pwsh.execute("Get-AzVM -Status", json_parse=True, timeout=120)
 
-system_data = get_system_info()
-print(f"OS: {system_data['computer']['WindowsProductName']}")
-for disk in system_data['disks']:
-    free_gb = int(disk['FreeSpace']) / (1024**3)
-    total_gb = int(disk['Size']) / (1024**3)
-    print(f"Drive {disk['DeviceID']} - {free_gb:.1f} GB free of {total_gb:.1f} GB")
+    # If a command exceeds the timeout, an empty string is returned
+    # and the session remains usable for subsequent commands
 ```
 
 ### Error Handling and Logging
+
+PowerShell errors are automatically captured from stderr and logged:
 
 ```python
 import logging
@@ -201,72 +304,65 @@ from py_powershell import PowerShellSession
 # Configure logging to see PowerShell errors
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 with PowerShellSession() as pwsh:
-    # PowerShell errors are automatically logged during execute()
-    # The logger captures stderr output from PowerShell
+    # If the command produces an error, it's logged automatically
     result = pwsh.execute("Get-NonExistentCommand", timeout=5)
-
-    # Any PowerShell errors will appear in logs like:
-    # ERROR - py_powershell.powershell_session - PowerShell error output: Get-NonExistentCommand : The term 'Get-NonExistentCommand' is not recognized...
+    # Log output: ERROR - py_powershell.powershell_session -
+    #   PowerShell error output: The term 'Get-NonExistentCommand' is not recognized...
 
     if not result:
-        print("Command returned no output or failed")
+        print("Command failed — check logs for details")
+
+    # The session is still usable after an error
+    date = pwsh.execute("Get-Date")
+    print(date)
 ```
 
-## Advanced Configuration
+### Extending PowerShellSession
 
-### Custom Timeout Configuration
+Subclass `PowerShellSession` to add custom initialization or error handling:
 
 ```python
 from py_powershell import PowerShellSession
 
-with PowerShellSession() as pwsh:
-    # Execute with custom timeout (default is 10 seconds)
-    result = pwsh.execute("Get-Process", timeout=30)
 
-    # Long-running command with extended timeout
-    large_data = pwsh.execute(
-        "Get-EventLog -LogName System -Newest 1000",
-        json_parse=True,
-        timeout=60
-    )
+class AzurePowerShellSession(PowerShellSession):
+    """A session that auto-connects to Azure on init."""
 
-    # Quick command with short timeout
-    quick_result = pwsh.execute("Get-Date", timeout=5)
+    def __init__(self, subscription_id: str):
+        super().__init__()
+        self.execute(f"Connect-AzAccount -SubscriptionId '{self.sanitize(subscription_id)}'", timeout=30)
 
-    # Very long operation (e.g., Azure operations)
-    azure_vms = pwsh.execute(
-        "Get-AzVM -Status",
-        json_parse=True,
-        timeout=120  # 2 minutes
-    )
+    def _process_error(self, error_result: str) -> None:
+        """Custom error handling for Azure-specific errors."""
+        if "AuthorizationFailed" in error_result:
+            raise PermissionError(f"Azure authorization failed: {error_result}")
+        super()._process_error(error_result)
+
+
+with AzurePowerShellSession("your-subscription-id") as az:
+    vms = az.execute("Get-AzVM", json_parse=True, timeout=30)
 ```
 
-### Secure Credential Handling
+## Architecture
 
-```python
-from py_powershell import PowerShellSession
-import os
+### Class Hierarchy
 
-def connect_with_credentials():
-    with PowerShellSession() as pwsh:
-        # Use environment variables for credentials
-        username = pwsh.sanitize(os.environ.get('pwsh_USERNAME', ''))
-        password = pwsh.sanitize(os.environ.get('pwsh_PASSWORD', ''))
-
-        if username and password:
-            # Create secure credential
-            pwsh.execute(f"$secpass = ConvertTo-SecureString '{password}' -AsPlainText -Force")
-            pwsh.execute(f"$cred = New-Object System.Management.Automation.PSCredential('{username}', $secpass)")
-
-            # Use credential for authentication
-            result = pwsh.execute("Connect-SomeService -Credential $cred")
-            return result
-        else:
-            raise ValueError("Credentials not provided in environment variables")
+```
+PowerShellSession
+├── __init__()          # Spawn persistent pwsh subprocess
+├── execute()           # Execute commands with optional JSON parsing
+├── read_output()       # Read stdout/stderr with timeout via threads
+├── json_parse_output() # Extract and parse JSON from raw output
+├── sanitize()          # Filter input to prevent command injection
+├── remove_ansi()       # Strip ANSI escape sequences from output
+├── _process_error()    # Handle stderr output (overridable)
+├── close()             # Send exit, terminate process, close pipes
+├── __enter__()         # Context manager entry
+└── __exit__()          # Context manager exit with cleanup
 ```
 
 ## Contributing
@@ -275,6 +371,6 @@ We welcome contributions! Please submit pull requests or open issues on GitHub.
 
 ## Support
 
-- **Documentation**: [Read the full documentation](https://py-powershell.readthedocs.io)
+- **Documentation**: [Read the full documentation](https://docs.prowler.cloud)
 - **Issues**: [Report bugs or request features](https://github.com/prowler-cloud/py-powershell/issues)
 - **Discussions**: [Join the community discussions](https://github.com/prowler-cloud/py-powershell/discussions)
