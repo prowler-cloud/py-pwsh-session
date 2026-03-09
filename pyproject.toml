@@ -24,17 +24,17 @@ license = "Apache-2.0"
 maintainers = [
   {name = "Prowler Team", email = "engineering@prowler.com"}
 ]
-name = "py-powershell"
+name = "py-pwsh-session"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 version = "0.1.0"
 
 [project.urls]
-"Changelog" = "https://github.com/prowler-cloud/py-powershell/releases"
+"Changelog" = "https://github.com/prowler-cloud/py-pwsh-session/releases"
 "Documentation" = "https://docs.prowler.cloud"
-"Homepage" = "https://github.com/prowler-cloud/py-powershell"
-"Issue tracker" = "https://github.com/prowler-cloud/py-powershell/issues"
-"Repository" = "https://github.com/prowler-cloud/py-powershell"
+"Homepage" = "https://github.com/prowler-cloud/py-pwsh-session"
+"Issue tracker" = "https://github.com/prowler-cloud/py-pwsh-session/issues"
+"Repository" = "https://github.com/prowler-cloud/py-pwsh-session"
 
 [tool.poetry]
 packages = [{include = "py_powershell"}]
