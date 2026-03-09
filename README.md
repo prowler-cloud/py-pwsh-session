@@ -1,14 +1,14 @@
 <div align="center">
-  <img src="imgs/py-powershell.png" alt="py-powershell logo" height="300" />
+  <img src="imgs/py-pwsh-session.png" alt="py-pwsh-session logo" height="300" />
 
-  <h1>py-powershell</h1>
+  <h1>py-pwsh-session</h1>
 
   <p><em>Python module to manage persistent PowerShell sessions, with support for command execution, JSON result parsing, and secure error handling.</em></p>
 </div>
 
 ---
 
-**py-powershell** is a modern, lightweight Python wrapper that provides seamless integration with PowerShell sessions. Built for developers who need reliable, persistent PowerShell automation in their Python applications.
+**py-pwsh-session** is a modern, lightweight Python wrapper that provides seamless integration with PowerShell sessions. Built for developers who need reliable, persistent PowerShell automation in their Python applications.
 
 ## Key Features
 
@@ -24,7 +24,7 @@
 
 ### Connection Lifecycle
 
-The following diagram shows how `py-powershell` manages the full lifecycle of a PowerShell session, from initialization to cleanup:
+The following diagram shows how `py-pwsh-session` manages the full lifecycle of a PowerShell session, from initialization to cleanup:
 
 ```mermaid
 flowchart TD
@@ -81,20 +81,20 @@ sequenceDiagram
 
 ### Persistent Sessions: Why They Matter
 
-Unlike running individual `subprocess.run(["pwsh", "-Command", "..."])` calls, `py-powershell` keeps a **single PowerShell process alive** across multiple commands.
+Unlike running individual `subprocess.run(["pwsh", "-Command", "..."])` calls, `py-pwsh-session` keeps a **single PowerShell process alive** across multiple commands.
 
-This is critical when working with **Microsoft PowerShell modules** (Azure, Exchange Online, Microsoft Graph, etc.) that require authentication. With individual subprocess calls, each command spawns a new `pwsh` process that dies immediately after execution — the authenticated session dies with it, making it impossible to run follow-up queries. With `py-powershell`, you authenticate once and the session stays alive, so all subsequent commands run in the same authenticated context.
+This is critical when working with **Microsoft PowerShell modules** (Azure, Exchange Online, Microsoft Graph, etc.) that require authentication. With individual subprocess calls, each command spawns a new `pwsh` process that dies immediately after execution — the authenticated session dies with it, making it impossible to run follow-up queries. With `py-pwsh-session`, you authenticate once and the session stays alive, so all subsequent commands run in the same authenticated context.
 
 ```mermaid
 flowchart LR
-    subgraph without["Without py-powershell"]
+    subgraph without["Without py-pwsh-session"]
         direction TB
         A1["subprocess.run(Connect-AzAccount)"] --> A2["Start pwsh → Auth ✅ → Exit ❌"]
         A3["subprocess.run(Get-AzVM)"] --> A4["Start pwsh → Not authenticated ❌"]
         A5["subprocess.run(Get-AzVM)"] --> A6["Start pwsh → Not authenticated ❌"]
     end
 
-    subgraph with["With py-powershell"]
+    subgraph with["With py-pwsh-session"]
         direction TB
         B1["PowerShellSession()"] --> B2["Start pwsh once"]
         B2 --> B3["execute(Connect-AzAccount) ✅"]
@@ -104,7 +104,7 @@ flowchart LR
     end
 ```
 
-| Aspect | `subprocess.run()` per command | `py-powershell` session |
+| Aspect | `subprocess.run()` per command | `py-pwsh-session` session |
 |---|---|---|
 | Process startup | Every command | Once |
 | Authentication | Lost after each command | Persists across commands |
@@ -141,7 +141,7 @@ sudo apt install -y powershell
 ### Installation
 
 ```bash
-pip install py-powershell
+pip install py-pwsh-session
 ```
 
 ### Basic Usage
@@ -372,5 +372,5 @@ We welcome contributions! Please submit pull requests or open issues on GitHub.
 ## Support
 
 - **Documentation**: [Read the full documentation](https://docs.prowler.cloud)
-- **Issues**: [Report bugs or request features](https://github.com/prowler-cloud/py-powershell/issues)
-- **Discussions**: [Join the community discussions](https://github.com/prowler-cloud/py-powershell/discussions)
+- **Issues**: [Report bugs or request features](https://github.com/prowler-cloud/py-pwsh-session/issues)
+- **Discussions**: [Join the community discussions](https://github.com/prowler-cloud/py-pwsh-session/discussions)
