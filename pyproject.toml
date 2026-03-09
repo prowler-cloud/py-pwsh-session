@@ -40,7 +40,7 @@ version = "0.1.0"
 packages = [{include = "py_powershell"}]
 
 [tool.poetry.group.dev.dependencies]
-autoflake = "^2.3.0"
+autoflake = "^2.3.3"
 bandit = "^1.9.4"
 black = "^26.1.0"
 isort = "^5.13.0"
