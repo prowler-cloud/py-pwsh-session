@@ -83,8 +83,6 @@ sequenceDiagram
 
 Unlike running individual `subprocess.run(["pwsh", "-Command", "..."])` calls, `py-powershell` keeps a **single PowerShell process alive** across multiple commands.
 
-This is critical when working with **Microsoft PowerShell modules** (Azure, Exchange Online, Microsoft Graph, etc.) that require authentication. With individual subprocess calls, each command spawns a new `pwsh` process that dies immediately after execution — the authenticated session dies with it, making it impossible to run follow-up queries. With `py-powershell`, you authenticate once and the session stays alive, so all subsequent commands run in the same authenticated context.
-
 ```mermaid
 flowchart LR
     subgraph without["Without py-powershell"]
@@ -93,7 +91,12 @@ flowchart LR
         A3["subprocess.run(Get-AzVM)"] --> A4["Start pwsh → Not authenticated ❌"]
         A5["subprocess.run(Get-AzVM)"] --> A6["Start pwsh → Not authenticated ❌"]
     end
+```
 
+This is critical when working with **Microsoft PowerShell modules** (Azure, Exchange Online, Microsoft Graph, etc.) that require authentication. With individual subprocess calls, each command spawns a new `pwsh` process that dies immediately after execution — the authenticated session dies with it, making it impossible to run follow-up queries. With `py-powershell`, you authenticate once and the session stays alive, so all subsequent commands run in the same authenticated context.
+
+```mermaid
+flowchart LR
     subgraph with["With py-powershell"]
         direction LR
         B1["PowerShellSession()"] --> B2["execute(Connect-AzAccount) ✅"]
