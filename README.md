@@ -94,13 +94,16 @@ flowchart LR
         A5["subprocess.run(Get-AzVM)"] --> A6["Start pwsh → Not authenticated ❌"]
     end
 
-    subgraph with["With py-pwsh-session"]
-        direction TB
-        B1["PowerShellSession()"] --> B2["Start pwsh once"]
-        B2 --> B3["execute(Connect-AzAccount) ✅"]
-        B3 --> B4["execute(Get-AzVM) ✅ authenticated"]
-        B4 --> B5["execute(Get-AzStorageAccount) ✅ authenticated"]
-        B5 --> B6["close()"]
+    subgraph with["With py-powershell"]
+        direction LR
+        B1["PowerShellSession()"] --> B2["execute(Connect-AzAccount) ✅"]
+        subgraph session["Authenticated Session"]
+            B3["execute(Get-AzVM) ✅"]
+            B4["execute(Get-AzStorageAccount) ✅"]
+            B5["execute(...) ✅"]
+        end
+        B2 --> session
+        session --> B6["close()"]
     end
 ```
 
