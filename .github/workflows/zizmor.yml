@@ -1,12 +1,16 @@
-name: 'Tools: TruffleHog'
+name: 'Tools: Zizmor'
 
 on:
   push:
     branches:
       - 'main'
+    paths:
+      - '.github/workflows/**'
   pull_request:
     branches:
       - 'main'
+    paths:
+      - '.github/workflows/**'
 
 permissions: {}
 
@@ -15,21 +19,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  scan-secrets:
-    name: Scan for secrets
+  zizmor:
+    name: Lint GitHub Actions
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read # required to checkout code
+      security-events: write # required to upload SARIF results
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
           persist-credentials: false
 
-      - name: Scan for secrets with TruffleHog
-        uses: trufflesecurity/trufflehog@ef6e76c3c4023279497fab4721ffa071a722fd05 # v3.92.4
-        with:
-          extra_args: '--results=verified,unknown'
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@71321a20a9ded102f6e9ce5718a2fcec2c4f70d8 # v0.5.2
+
+
