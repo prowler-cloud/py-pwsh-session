@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read # required to checkout code
       pull-requests: read # required to read PR title
 
     steps:

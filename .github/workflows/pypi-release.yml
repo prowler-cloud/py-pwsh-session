@@ -39,7 +39,7 @@ jobs:
               run: |
                   poetry build
 
-            - name: Publish package to PyPI
+            - name: Publish package to PyPI # zizmor: ignore[secrets-outside-env]
               env:
                   POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
               run: |
