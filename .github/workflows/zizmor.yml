@@ -1,4 +1,4 @@
-name: GitHub Actions Security Analysis
+name: "Tools: Zizmor"
 
 on:
   push:
