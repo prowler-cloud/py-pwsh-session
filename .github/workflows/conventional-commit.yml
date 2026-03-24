@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      pull-requests: read # required to read PR title
+      pull-requests: read
 
     steps:
       - name: Check PR title format

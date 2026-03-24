@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read # required to checkout code
-      pull-requests: write # required to add/remove conflict labels
-      issues: write # required to create/update comments
+      contents: read
+      pull-requests: write
+      issues: write
 
     steps:
       - name: Checkout PR head

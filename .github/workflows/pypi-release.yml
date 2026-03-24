@@ -18,8 +18,8 @@ jobs:
         runs-on: ubuntu-latest
         environment: release
         permissions:
-            contents: read # required to checkout code
-            id-token: write # required for trusted publishing to PyPI
+            contents: read
+            id-token: write
 
         name: Release py-pwsh-session to PyPI
         steps:
