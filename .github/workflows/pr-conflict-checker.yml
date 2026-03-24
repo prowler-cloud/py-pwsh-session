@@ -99,7 +99,8 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: '<!-- conflict-checker-comment -->'
 
-      - name: Create or update comment
+
+      - name: Create or update comment # zizmor: ignore[superfluous-actions]
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
