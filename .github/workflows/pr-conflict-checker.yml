@@ -10,12 +10,15 @@ on:
     branches:
       - 'main'
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   check-conflicts:
+    name: Check for conflict markers
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -76,15 +79,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HAS_CONFLICTS: ${{ steps.conflict-check.outputs.has_conflicts }}
+          REPO: ${{ github.repository }}
         run: |
           LABEL_NAME="has-conflicts"
 
           if [ "$HAS_CONFLICTS" = "true" ]; then
             echo "Adding conflict label to PR #${PR_NUMBER}..."
-            gh pr edit "$PR_NUMBER" --add-label "$LABEL_NAME" --repo ${{ github.repository }} || true
+            gh pr edit "$PR_NUMBER" --add-label "$LABEL_NAME" --repo "$REPO" || true
           else
             echo "Removing conflict label from PR #${PR_NUMBER}..."
-            gh pr edit "$PR_NUMBER" --remove-label "$LABEL_NAME" --repo ${{ github.repository }} || true
+            gh pr edit "$PR_NUMBER" --remove-label "$LABEL_NAME" --repo "$REPO" || true
           fi
 
       - name: Find existing comment
@@ -95,7 +99,8 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: '<!-- conflict-checker-comment -->'
 
-      - name: Create or update comment
+
+      - name: Create or update comment # zizmor: ignore[superfluous-actions]
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
